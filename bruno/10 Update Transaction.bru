@@ -1,0 +1,27 @@
+meta {
+  name: 10 Update Transaction
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{baseUrl}}/transactions/1
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "amount": 900000,
+    "type": "income",
+    "description": "Sueldo actualizado",
+    "date": "2026-05-10",
+    "categoryId": 1,
+    "receiptUrl": "https://pub-7e000acc95024afc8cf4319802525457.r2.dev/receipts/demo-actualizado.jpg"
+  }
+}
