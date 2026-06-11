@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js'
-import type { CreateTransactionInput, UpdateTransactionInput } from '../types/transaction.js'
+import type { CreateTransactionInput, UpdateTransactionInput } from '../schemas/transactions.schema.js'
 
 export function findAllTransactionsByUser(userId: number) {
   return prisma.transaction.findMany({

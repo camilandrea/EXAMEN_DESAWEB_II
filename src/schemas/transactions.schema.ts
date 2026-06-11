@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import type { CreateTransactionInput, UpdateTransactionInput } from '../types/transaction.js'
-
 type ValidationResult<T> =
   | { success: true; data: T }
   | { success: false; error: string }
@@ -21,6 +19,9 @@ const updateTransactionSchema = createTransactionSchema.partial().refine(
   (value) => Object.keys(value).length > 0,
   'Debes enviar al menos un campo valido'
 )
+
+export type CreateTransactionInput = z.infer<typeof createTransactionSchema>
+export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>
 
 export function parseTransactionId(rawId: string | undefined): ValidationResult<number> {
   if (!rawId) {

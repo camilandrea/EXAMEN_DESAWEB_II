@@ -12,16 +12,3 @@ export type Transaction = {
   categoryId: number
   userId: number
 }
-
-export type CreateTransactionInput = {
-  amount: number
-  type: TransactionType
-  description?: string
-  date: Date
-  receiptUrl?: string
-  latitude?: number
-  longitude?: number
-  categoryId: number
-}
-
-export type UpdateTransactionInput = Partial<CreateTransactionInput>

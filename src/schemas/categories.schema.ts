@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import type { CreateCategoryInput, UpdateCategoryInput } from '../types/category.js'
-
 type ValidationResult<T> =
   | { success: true; data: T }
   | { success: false; error: string }
@@ -14,6 +12,9 @@ const updateCategorySchema = createCategorySchema.partial().refine(
   (value) => Object.keys(value).length > 0,
   'Debes enviar al menos un campo valido'
 )
+
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>
+export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>
 
 export function parseCategoryId(rawId: string | undefined): ValidationResult<number> {
   if (!rawId) {
