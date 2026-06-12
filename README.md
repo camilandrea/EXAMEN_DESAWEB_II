@@ -1,20 +1,47 @@
-# Cashi API - Evaluacion Unidad 3
+# Cashi API - Examen transversal
 
-API REST de finanzas personales construida con Hono, Node.js, TypeScript, Prisma y PostgreSQL. Esta version agrega autenticacion con JWT, transacciones privadas por usuario y subida local de comprobantes.
+API REST para gestionar finanzas personales, construida con Hono, Node.js,
+TypeScript, Prisma y PostgreSQL. Incluye autenticación JWT, transacciones privadas
+por usuario y almacenamiento de comprobantes en Cloudflare R2.
 
-## Stack
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Hono](https://img.shields.io/badge/Hono-4-E36002?logo=hono&logoColor=white)](https://hono.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 
-- Node.js
-- TypeScript
-- Hono
-- Prisma
-- PostgreSQL
-- Docker Compose
-- Zod
-- bcryptjs
-- jsonwebtoken
-- Cloudflare R2
-- Yarn
+## Contenido
+
+- [Producción](#producción)
+- [Tecnologías](#tecnologías)
+- [Instalación y ejecución](#instalación-y-ejecución)
+- [Arquitectura](#arquitectura)
+- [Endpoints](#endpoints)
+- [Ejemplos](#ejemplos)
+- [Colección Bruno](#colección-bruno)
+
+## Producción
+
+La API está desplegada en Render:
+
+**URL base:** [https://api-cashi.onrender.com](https://api-cashi.onrender.com)
+
+Para comprobar que el servicio está activo:
+
+```http
+GET https://api-cashi.onrender.com/
+```
+
+## Tecnologías
+
+| Área | Tecnología | Uso |
+| --- | --- | --- |
+| Runtime | Node.js + TypeScript | Ejecución y tipado de la API |
+| Framework HTTP | Hono | Rutas, middleware y respuestas HTTP |
+| Persistencia | PostgreSQL + Prisma | Base de datos, modelos y migraciones |
+| Validación | Zod | Validación de parámetros y cuerpos JSON |
+| Seguridad | JWT + bcryptjs | Autenticación y hash de contraseñas |
+| Archivos | Cloudflare R2 | Almacenamiento de comprobantes |
+| Desarrollo | Docker Compose + Yarn | Base local y gestión del proyecto |
 
 ## Requisitos
 
@@ -45,13 +72,15 @@ R2_PUBLIC_BASE_URL="https://pub-7e000acc95024afc8cf4319802525457.r2.dev"
 R2_RECEIPTS_PREFIX="receipts"
 ```
 
-## Instalacion
+## Instalación y ejecución
+
+### Instalar dependencias
 
 ```bash
 yarn install
 ```
 
-## Base de datos
+### Preparar la base de datos
 
 Levanta PostgreSQL con Docker Compose:
 
@@ -66,65 +95,98 @@ yarn prisma:generate
 yarn prisma:deploy
 ```
 
-se puede reiniciar la base de desarrollo:
+Opcionalmente, puedes reiniciar la base de desarrollo:
 
 ```bash
 yarn prisma migrate reset
 ```
 
-## Ejecutar en desarrollo
+### Iniciar la API
 
 ```bash
 yarn dev
 ```
 
-La API queda disponible en:
+La API local queda disponible en:
 
 ```txt
 http://localhost:3000
 ```
 
+Para consumir el servicio desplegado, usa `https://api-cashi.onrender.com` como URL base en lugar de la URL local.
+
 ## Arquitectura
+
+La aplicación sigue una arquitectura por capas. Las rutas reciben las
+solicitudes, los controladores coordinan cada caso de uso y los repositorios
+concentran el acceso a PostgreSQL mediante Prisma.
+
+```mermaid
+flowchart LR
+    Client["Cliente / Bruno"] --> Routes["Routes"]
+    Routes --> Auth["Middleware JWT"]
+    Auth --> Controllers["Controllers"]
+    Controllers --> Schemas["Schemas Zod"]
+    Controllers --> Repositories["Repositories"]
+    Repositories --> Prisma["Prisma Client"]
+    Prisma --> PostgreSQL[(PostgreSQL)]
+    Controllers --> R2["Cloudflare R2"]
+```
+
+### Flujo de una solicitud protegida
+
+1. La ruta recibe la solicitud HTTP.
+2. El middleware verifica el token JWT y obtiene el usuario autenticado.
+3. El controlador valida los datos mediante un esquema Zod.
+4. El repositorio ejecuta la operación correspondiente con Prisma.
+5. El controlador devuelve la respuesta HTTP.
+
+### Estructura del proyecto
 
 ```txt
 src/
-  app.ts
-  index.ts
-  lib/
-    jwt.ts
-    load-env.ts
-    prisma.ts
-    prisma-error.ts
-  middlewares/
-    auth.middleware.ts
-  routes/
-    auth.routes.ts
-    categories.routes.ts
-    transactions.routes.ts
-  controllers/
-    auth.controller.ts
-    categories.controller.ts
-    transactions.controller.ts
-    uploads.controller.ts
-  repositories/
-    categories.repository.ts
-    transactions.repository.ts
-    users.repository.ts
-  schemas/
-    auth.schema.ts
-    categories.schema.ts
-    transactions.schema.ts
-  types/
-    auth.ts
-    category.ts
-    transaction.ts
+├── app.ts                       # Configuración de Hono y rutas principales
+├── index.ts                     # Punto de entrada del servidor
+├── controllers/                 # Casos de uso y respuestas HTTP
+│   ├── auth.controller.ts
+│   ├── categories.controller.ts
+│   ├── transactions.controller.ts
+│   └── uploads.controller.ts
+├── lib/                         # Clientes y utilidades compartidas
+│   ├── jwt.ts
+│   ├── load-env.ts
+│   ├── prisma.ts
+│   ├── prisma-error.ts
+│   └── r2.ts
+├── middlewares/
+│   └── auth.middleware.ts       # Protección de rutas mediante JWT
+├── repositories/                # Acceso a datos mediante Prisma
+│   ├── categories.repository.ts
+│   ├── transactions.repository.ts
+│   └── users.repository.ts
+├── routes/                       # Definición de endpoints
+│   ├── auth.routes.ts
+│   ├── categories.routes.ts
+│   └── transactions.routes.ts
+├── schemas/                      # Validaciones con Zod
+│   ├── auth.schema.ts
+│   ├── categories.schema.ts
+│   └── transactions.schema.ts
+└── types/                        # Tipos TypeScript del dominio
+    ├── auth.ts
+    ├── category.ts
+    └── transaction.ts
 ```
 
-- `routes`: define las rutas HTTP.
-- `controllers`: maneja requests, status codes y logica de negocio. El ownership check de transacciones vive aqui.
-- `repositories`: accede a la base de datos mediante Prisma.
-- `schemas`: valida entradas con Zod.
-- `middlewares`: contiene el middleware centralizado de autenticacion JWT.
+| Capa | Responsabilidad |
+| --- | --- |
+| `routes` | Define métodos, rutas y controladores asociados. |
+| `middlewares` | Verifica el JWT y expone el usuario autenticado. |
+| `controllers` | Gestiona solicitudes, respuestas, permisos y lógica de negocio. |
+| `schemas` | Valida y transforma los datos de entrada con Zod. |
+| `repositories` | Encapsula las operaciones de base de datos con Prisma. |
+| `lib` | Centraliza clientes y utilidades de JWT, Prisma, R2 y entorno. |
+| `types` | Declara los tipos TypeScript compartidos del dominio. |
 
 ## Endpoints
 
@@ -233,7 +295,7 @@ Los comprobantes se guardan en Cloudflare R2 dentro del prefijo definido por `R2
 - `403`: transaccion existente pero perteneciente a otro usuario.
 - `404`: recurso no encontrado.
 
-## Bruno
+## Colección Bruno
 
 La carpeta `bruno/` contiene una coleccion para probar la API. Tambien se incluye un JSON importable:
 
@@ -254,17 +316,14 @@ Flujo recomendado:
 
 ## Problemas presentados durante el desarrollo
 
-- Al probar `POST /categories` en Bruno aparecio `Internal Server Error`, aunque `GET /` respondia correctamente. La causa fue que la API no estaba cargando el archivo `.env` antes de inicializar Prisma, por lo que `DATABASE_URL` no estaba disponible cuando se intentaba usar la base de datos. Se corrigio agregando una carga local de `.env` en `src/lib/load-env.ts` e importandola al inicio de `src/index.ts`.
-- Health funcionaba porque ese endpoint no consulta PostgreSQL. El error aparecia recien al crear una categoria, que es la primera operacion que usa Prisma y la base de datos.
-- Al pasar de EVA2 a EVA3 se agrego `userId` obligatorio a `Transaction`. Si ya existen transacciones antiguas sin usuario, la migracion puede fallar. En desarrollo se puede usar `yarn prisma migrate reset` para reiniciar la base, como permite el enunciado.
-- Para integrar Cloudflare R2 se necesito habilitar una Public Development URL del bucket y crear un User API Token con permiso `Object Read & Write` solo para `desaweb2-bucket`. Las credenciales reales se dejaron en `.env` local y no deben subirse al repositorio.
+- Había 2 schemas de transacciones con la misma lógica pero solo 1 se utilizaba en el proyecto.
+- No hubo cambios relevantes entre la EVA3 y el Examen ya que ya tenía la implementación del R2 Storage y el
+despliegue en Render.
 
 ## Uso de IA
 
 Se uso ChatGPT/Codex como apoyo durante el desarrollo del proyecto. La ayuda se concentro en:
 
-- Crear la carpeta `schemas/` y mover ahi las validaciones con Zod, evitando mezclar validaciones directamente en rutas o controllers.
-- Implementar autenticacion con JWT y contrasenas hasheadas con bcrypt.
-- Configurar la integracion con Cloudflare R2 Storage para subir comprobantes al bucket `desaweb2-bucket` y devolver una URL publica.
-- Crear y actualizar la coleccion Bruno/Postman para probar los endpoints.
+- Redactar README
+
 
